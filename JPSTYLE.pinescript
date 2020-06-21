@@ -1,0 +1,75 @@
+//@version=4
+study(title="SD - Central Pivot Range - Daily Weekly Monthly Yearly", shorttitle="[SD]CPR", overlay=true, precision=8)
+
+daily_cpr = input(title="Number of Daily CPR Back", type=input.integer, defval=7, minval=0)
+weekly_cpr = input(title="Number of Weekly CPR Back", type=input.integer, defval=0, minval=0)
+monthly_cpr = input(title="Number of Monthly CPR Back", type=input.integer, defval=0, minval=0)
+yearly_cpr = input(title="Number of Yearly CPR Back", type=input.integer, defval=0, minval=0)
+
+
+new_bar(res) =>
+    change(time(res)) != 0
+new_period(condition, src) =>
+    result = 0.0
+    result := condition ? src : result[1]
+    result
+draw_cpr(md_level, tc, bc, res, level_color) =>
+    var line hi_line = na
+    var line md_line = na
+    var line lo_line = na
+    hi_level = tc >= bc ? tc : bc
+    lo_level = tc >= bc ? bc : tc
+    if new_bar(res)
+        line.set_x2(hi_line, bar_index)
+        line.set_x2(md_line, bar_index)
+        line.set_x2(lo_line, bar_index)
+        line.set_extend(hi_line, extend.none)
+        line.set_extend(md_line, extend.none)
+        line.set_extend(lo_line, extend.none)
+        hi_line := line.new(bar_index, hi_level, bar_index, hi_level, extend=extend.right, color=level_color)
+        md_line := line.new(bar_index, md_level, bar_index, md_level, extend=extend.right, color=level_color)
+        lo_line := line.new(bar_index, lo_level, bar_index, lo_level, extend=extend.right, color=level_color)
+    if not na(md_line) and line.get_x2(md_line) != bar_index
+        line.set_x2(hi_line, bar_index)
+        line.set_x2(md_line, bar_index)
+        line.set_x2(lo_line, bar_index)
+
+pivot = (high + low + close) / 3.0
+bc = (high + low) / 2.0
+tc = pivot - bc + pivot
+
+
+//Daily Central Pivot Range
+dpp = security(syminfo.tickerid, 'D', pivot[1], lookahead=barmerge.lookahead_on)
+dbc = security(syminfo.tickerid, 'D', bc[1], lookahead=barmerge.lookahead_on)
+dtc = security(syminfo.tickerid, 'D', tc[1], lookahead=barmerge.lookahead_on)
+one_day = 1000 * 60 * 60 * 24
+if timeframe.isintraday and daily_cpr > 0 and timenow - time < one_day * daily_cpr 
+    draw_cpr(dpp, dtc, dbc, "D", #238859)
+
+
+//Weekly Central Pivot Range
+wpp = security(syminfo.tickerid, 'W', pivot[1], lookahead=barmerge.lookahead_on)
+wbc = security(syminfo.tickerid, 'W', bc[1], lookahead=barmerge.lookahead_on)
+wtc = security(syminfo.tickerid, 'W', tc[1], lookahead=barmerge.lookahead_on)
+one_week = one_day * 7
+if (timeframe.isintraday or timeframe.isdaily) and weekly_cpr > 0 and timenow - time < one_week * weekly_cpr
+    draw_cpr(wpp, wtc, wbc, "W", #5b85bf)
+
+
+//Monthly Central Pivot Range
+mpp = security(syminfo.tickerid, 'M', pivot[1], lookahead=barmerge.lookahead_on)
+mbc = security(syminfo.tickerid, 'M', bc[1], lookahead=barmerge.lookahead_on)
+mtc = security(syminfo.tickerid, 'M', tc[1], lookahead=barmerge.lookahead_on)
+one_month = one_day * 30
+if (timeframe.isintraday or timeframe.isdaily or timeframe.isweekly) and monthly_cpr > 0 and timenow - time < one_month * monthly_cpr
+    draw_cpr(mpp, mtc, mbc, "M", #b35b46)
+
+
+//Yearly Central Pivot Range
+ypp = security(syminfo.tickerid, '12M', pivot[1], lookahead=barmerge.lookahead_on)
+ybc = security(syminfo.tickerid, '12M', bc[1], lookahead=barmerge.lookahead_on)
+ytc = security(syminfo.tickerid, '12M', tc[1], lookahead=barmerge.lookahead_on)
+one_year = one_day * 365
+if (timeframe.isintraday or timeframe.isdaily or timeframe.isweekly or timeframe.ismonthly) and yearly_cpr > 0 and timenow - time < one_year * yearly_cpr
+    draw_cpr(ypp, ytc, ybc, "12M", #ed8608)
